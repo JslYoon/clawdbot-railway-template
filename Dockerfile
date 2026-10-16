@@ -36,7 +36,12 @@ RUN OPENCLAW_RUN_NODE_SKIP_DTS_BUILD=1 \
 ENV OPENCLAW_PREFER_PNPM=1
 
 RUN pnpm_config_verify_deps_before_run=false pnpm ui:build
-
+# Remove bundled plugins that were intentionally omitted from the Docker runtime.
+# Without this, OpenClaw discovers their source manifests but cannot find their
+# compiled index.js/setup-entry.js files.
+RUN OPENCLAW_EXTENSIONS="" \
+    OPENCLAW_BUNDLED_PLUGIN_DIR=extensions \
+    node scripts/prune-docker-plugin-dist.mjs
 # Runtime image
 FROM node:24-bookworm
 ENV NODE_ENV=production
