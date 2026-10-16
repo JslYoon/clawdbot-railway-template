@@ -82,6 +82,5 @@ COPY src ./src
 # If we force a different port, deployments can come up but the domain will route elsewhere.
 EXPOSE 8080
 
-# Ensure PID 1 reaps zombies and forwards signals.
 ENTRYPOINT ["tini", "--"]
-CMD ["sh", "-c", "openclaw doctor --fix --non-interactive && exec node src/server.js"]
+CMD ["node", "src/server.js"]
