@@ -32,12 +32,15 @@ RUN set -eux; \
     sed -i -E 's/"openclaw"[[:space:]]*:[[:space:]]*">=[^"]+"/"openclaw": "*"/g' "$f"; \
     sed -i -E 's/"openclaw"[[:space:]]*:[[:space:]]*"workspace:[^"]+"/"openclaw": "*"/g' "$f"; \
   done
-
+  
 RUN pnpm install --no-frozen-lockfile
-RUN pnpm build
-ENV OPENCLAW_PREFER_PNPM=1
-RUN pnpm ui:install && pnpm ui:build
 
+# Runtime-only OpenClaw build.
+# Skip TypeScript declaration generation, which is not needed in this Docker runtime
+# and is extremely expensive on Railway builders.
+RUN OPENCLAW_RUN_NODE_SKIP_DTS_BUILD=1 pnpm build
+
+ENV OPENCLAW_PREFER_PNPM=1
 
 # Runtime image
 FROM node:24-bookworm
