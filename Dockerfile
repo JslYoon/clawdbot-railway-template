@@ -24,23 +24,18 @@ WORKDIR /openclaw
 # Using a released tag avoids build breakage when `main` temporarily references unpublished packages.
 ARG OPENCLAW_GIT_REF=v2026.10.3
 RUN git clone --depth 1 --branch "${OPENCLAW_GIT_REF}" https://github.com/openclaw/openclaw.git .
+# Keep OpenClaw's release workspace dependencies intact.
+RUN pnpm install --frozen-lockfile
 
-# Patch: relax version requirements for packages that may reference unpublished versions.
-# Apply to all extension package.json files to handle workspace protocol (workspace:*).
-RUN set -eux; \
-  find ./extensions -name 'package.json' -type f | while read -r f; do \
-    sed -i -E 's/"openclaw"[[:space:]]*:[[:space:]]*">=[^"]+"/"openclaw": "*"/g' "$f"; \
-    sed -i -E 's/"openclaw"[[:space:]]*:[[:space:]]*"workspace:[^"]+"/"openclaw": "*"/g' "$f"; \
-  done
-  
-RUN pnpm install --no-frozen-lockfile
-
-# Runtime-only OpenClaw build.
-# Skip TypeScript declaration generation, which is not needed in this Docker runtime
-# and is extremely expensive on Railway builders.
-RUN OPENCLAW_RUN_NODE_SKIP_DTS_BUILD=1 pnpm build
+# Use OpenClaw's Docker runtime build path.
+# Skip TypeScript declarations because the Railway runtime does not need them.
+RUN OPENCLAW_RUN_NODE_SKIP_DTS_BUILD=1 \
+    pnpm_config_verify_deps_before_run=false \
+    pnpm build:docker
 
 ENV OPENCLAW_PREFER_PNPM=1
+
+RUN pnpm_config_verify_deps_before_run=false pnpm ui:build
 
 # Runtime image
 FROM node:24-bookworm
